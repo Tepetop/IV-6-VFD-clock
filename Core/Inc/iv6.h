@@ -6,7 +6,7 @@
 
 // Ustawienie pinów dla lampy. MSB idzie jako pierwszy. pin 10 to segment 7, pin 11 to segment 8 czyli kropka.
 //          Ciag idzie tak: 11, 10, 6, 5, 4, 3, 2, 1, 0, dodatkowo logika jest odwrotna, czyli 0 to zapalony segment, a 1 to zgaszony segment                 
-extern uint8_t iv6_digits[10];
+extern uint8_t iv6_digits[11];
 
 
 /*      FUNCTIONS PROTOTYPES       */

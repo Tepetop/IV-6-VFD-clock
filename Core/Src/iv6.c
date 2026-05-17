@@ -2,7 +2,7 @@
 
 // Ustawienie pinów dla lampy. MSB idzie jako pierwszy. pin 10 to segment 7, pin 11 to segment 8 czyli kropka.
 // Ciag idzie tak: 11, 10, 6, 5, 4, 3, 2, 1, 0, dodatkowo logika jest odwrotna, czyli 0 to zapalony segment, a 1 to zgaszony segment
-uint8_t iv6_digits[10] =
+uint8_t iv6_digits[11] =
 {
     0b10000100, // 0
     0b10111110, // 1
@@ -14,7 +14,7 @@ uint8_t iv6_digits[10] =
     0b10111100, // 7
     0b10000000, // 8
     0b10110000, // 9
-    // 0b01111111 //  kropka
+    0b01111111 //  kropka
     // W HEX
     // 0x84, // 0
     // 0xBE, // 1
@@ -50,7 +50,7 @@ void IV6_WritePin(GPIO_PinState state)
 */
 void iv6_set_digit(uint8_t digit)
 {
-    if (digit < 10)
+    if (digit < 11)
     {
         // Ustawienie pinów zgodnie z wartością z tablicy iv6_digits
         // Piny 1-11 są ustawiane na podstawie bitów w iv6_digits[digit]
