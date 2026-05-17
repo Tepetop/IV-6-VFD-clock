@@ -1,13 +1,9 @@
 /.metadata/
 /Assets/Docs/
-/Drivers/
-/Debug/
+/build/
 /Release/
 *.launch
-
-# Libraries with undefined licenses
-internal_temp_sensor.h
-internal_temp_sensor.c
+/Drivers/
 
 # Prerequisites
 *.d
