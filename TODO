@@ -1,0 +1,8 @@
+[]  rozbudowac bibliteke
+[]  dodac bibliteke ds3231
+[]  dodac kolejne lampy
+[]  dodac tranzystory do sterowania zapaleniem lamp
+[]  zrobic lustro pradowa dla pradu filamentu
+[]  rozkminic jaki zrobic sygnal zmienny dla filamentu. Najepiej byloby jakiegos sinus 1V tylko pytanie czy to ma byc amplituda czy peak peak
+[]  pomyslec w jaki sposob konwertowac czas i za jego pomoca sterowac lampa
+[]  trzeba sutawic jakis refresh, zeby oko nie widzalo zmian
