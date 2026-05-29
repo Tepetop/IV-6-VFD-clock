@@ -19,11 +19,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "gpio.h"
-#include "stm32f1xx_hal_gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <iv6.h>
+#include "iv6.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,7 +43,10 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-extern uint8_t iv6_digits[11];
+static HC595_t ShiftReg595;
+static IV6_t Display;
+static uint16_t DemoValue = 0u;
+static uint32_t DemoTick = 0u;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -55,6 +57,17 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static void IV6_SetDemoNumber(uint16_t value)
+{
+  uint8_t digits[IV6_DIGITS_COUNT];
+
+  digits[0] = (uint8_t)((value / 1000u) % 10u);
+  digits[1] = (uint8_t)((value / 100u) % 10u);
+  digits[2] = (uint8_t)((value / 10u) % 10u);
+  digits[3] = (uint8_t)(value % 10u);
+
+  IV6_SetDigits(&Display, digits);
+}
 
 /* USER CODE END 0 */
 
@@ -88,9 +101,11 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-  // Ustawienie na sztywno pinu data B zeby rejestr przesuwny mogl dzialac (bramka NAND na wejsciu)
-  HAL_GPIO_WritePin(DATA_B_GPIO_Port, DATA_B_Pin, GPIO_PIN_SET);
-
+  HC595_Init(&ShiftReg595, SER_GPIO_Port, SER_Pin, SRCLK_Pin, SRCLEAR__Pin, RCLK_Pin, OE__Pin);
+  IV6_Init(&Display, &ShiftReg595);
+  IV6_SetDemoNumber(DemoValue);
+  IV6_SetDot(&Display, 1u, true);
+  DemoTick = HAL_GetTick();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -101,11 +116,17 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    for(uint8_t i = 0; i < 11; i++)
+    IV6_RefreshStep(&Display);
+
+    if ((HAL_GetTick() - DemoTick) >= 500u)
     {
-        iv6_set_digit(i);
-        HAL_Delay(1000);
+      DemoTick = HAL_GetTick();
+      DemoValue = (uint16_t)((DemoValue + 1u) % 10000u);
+      IV6_SetDemoNumber(DemoValue);
+      IV6_SetDot(&Display, 1u, ((DemoValue & 0x01u) == 0u));
     }
+
+    HAL_Delay(1);
   }
   /* USER CODE END 3 */
 }

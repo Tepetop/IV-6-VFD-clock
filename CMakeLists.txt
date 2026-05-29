@@ -46,6 +46,10 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Core/Src/iv6.c
+    Core/Src/74hc595.c
+    #Core/Src/ds3231.c
+    Core/Src/button_debounce.c
+    Core/Src/74hc164.c
 )
 
 # Add include paths

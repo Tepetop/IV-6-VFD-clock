@@ -60,6 +60,16 @@ void Error_Handler(void);
 #define USER_BUTTON_Pin GPIO_PIN_13
 #define USER_BUTTON_GPIO_Port GPIOC
 #define USER_BUTTON_EXTI_IRQn EXTI15_10_IRQn
+#define SER_Pin GPIO_PIN_0
+#define SER_GPIO_Port GPIOA
+#define SRCLK_Pin GPIO_PIN_1
+#define SRCLK_GPIO_Port GPIOA
+#define SRCLEAR__Pin GPIO_PIN_2
+#define SRCLEAR__GPIO_Port GPIOA
+#define RCLK_Pin GPIO_PIN_3
+#define RCLK_GPIO_Port GPIOA
+#define OE__Pin GPIO_PIN_4
+#define OE__GPIO_Port GPIOA
 #define USER_LED_Pin GPIO_PIN_5
 #define USER_LED_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
@@ -70,8 +80,6 @@ void Error_Handler(void);
 #define CLK_PIN_GPIO_Port GPIOB
 #define DATA_A_Pin GPIO_PIN_4
 #define DATA_A_GPIO_Port GPIOB
-#define DATA_B_Pin GPIO_PIN_5
-#define DATA_B_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

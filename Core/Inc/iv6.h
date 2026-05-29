@@ -1,17 +1,25 @@
 #ifndef IV6_H
 #define IV6_H
 
-#include <main.h>
+#include "main.h"
+#include "74hc595.h"
+#include <stdbool.h>
+#include <stdint.h>
 
+#define IV6_DIGITS_COUNT 4u
+#define IV6_DOT_BIT      0x80u
 
-// Ustawienie pinów dla lampy. MSB idzie jako pierwszy. pin 10 to segment 7, pin 11 to segment 8 czyli kropka.
-//          Ciag idzie tak: 11, 10, 6, 5, 4, 3, 2, 1, 0, dodatkowo logika jest odwrotna, czyli 0 to zapalony segment, a 1 to zgaszony segment                 
-extern uint8_t iv6_digits[11];
+typedef struct {
+    HC595_t *Shift;
+    uint8_t DigitSegments[IV6_DIGITS_COUNT];
+    uint8_t ScanIndex;
+} IV6_t;
 
-
-/*      FUNCTIONS PROTOTYPES       */
-void IV6_WritePin(GPIO_PinState state);
-void iv6_set_digit(uint8_t digit);
-
+void IV6_Init(IV6_t *display, HC595_t *shift);
+void IV6_SetDigit(IV6_t *display, uint8_t index, uint8_t value);
+void IV6_SetDigits(IV6_t *display, const uint8_t values[IV6_DIGITS_COUNT]);
+void IV6_SetDot(IV6_t *display, uint8_t index, bool enabled);
+void IV6_Blank(IV6_t *display);
+void IV6_RefreshStep(IV6_t *display);
 
 #endif
