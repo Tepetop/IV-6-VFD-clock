@@ -48,7 +48,7 @@ static IV6_t Display;
 static uint16_t DemoValue = 0u;
 static uint32_t DemoTick = 0u;
 static uint32_t RefreshTick = 0u;
-uint16_t RefreshRate_ms = 5u; 
+uint16_t RefreshRate_ms = 5; 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -105,8 +105,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HC595_Init(&ShiftReg595, SER_GPIO_Port, SER_Pin, SRCLK_Pin, SRCLEAR__Pin, RCLK_Pin, OE__Pin);
   IV6_Init(&Display, &ShiftReg595);
-  IV6_SetDemoNumber(DemoValue);
-  IV6_SetDot(&Display, 1u, true);
+  //IV6_SetDemoNumber(DemoValue);
+  //IV6_SetDot(&Display, 1u, false);
   DemoTick = HAL_GetTick();
   RefreshTick = HAL_GetTick();
   /* USER CODE END 2 */
