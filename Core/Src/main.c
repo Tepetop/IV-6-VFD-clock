@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "iv6.h"
+#include "74hc595.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,6 +32,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define TEST_SEGMENT_DIGIT 0xC8u /* Active-low segments pattern for digit 2. */
+#define TEST_GRID_MASK     0xFEu /* Active-low: enable only first grid (Q0). */
 
 /* USER CODE END PD */
 
@@ -44,11 +46,6 @@
 
 /* USER CODE BEGIN PV */
 static HC595_t ShiftReg595;
-static IV6_t Display;
-static uint16_t DemoValue = 0u;
-static uint32_t DemoTick = 0u;
-static uint32_t RefreshTick = 0u;
-uint16_t RefreshRate_ms = 5u; 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -59,16 +56,9 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static void IV6_SetDemoNumber(uint16_t value)
+static uint16_t BuildSingleDigitFrame(void)
 {
-  uint8_t digits[IV6_DIGITS_COUNT];
-
-  digits[0] = (uint8_t)((value / 1000u) % 10u);
-  digits[1] = (uint8_t)((value / 100u) % 10u);
-  digits[2] = (uint8_t)((value / 10u) % 10u);
-  digits[3] = (uint8_t)(value % 10u);
-
-  IV6_SetDigits(&Display, digits);
+  return (uint16_t)(((uint16_t)TEST_GRID_MASK << 8u) | TEST_SEGMENT_DIGIT);
 }
 
 /* USER CODE END 0 */
@@ -103,12 +93,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-  HC595_Init(&ShiftReg595, SER_GPIO_Port, SER_Pin, SRCLK_Pin, SRCLEAR__Pin, RCLK_Pin, OE__Pin);
-  IV6_Init(&Display, &ShiftReg595);
-  IV6_SetDemoNumber(DemoValue);
-  IV6_SetDot(&Display, 1u, true);
-  DemoTick = HAL_GetTick();
-  RefreshTick = HAL_GetTick();
+  HC595_Init(&ShiftReg595, SER_GPIO_Port, SER_Pin, SRCLK_Pin, SRCLEAR_Pin, RCLK_Pin, OE_Pin);
+  HC595_SetShiftClear(&ShiftReg595, false);
+  HC595_WriteWord(&ShiftReg595, 0b1111111111111111u); /* Test pattern: all segments and grids off. */
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -118,22 +105,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-    /*  Odświeżanie wyświetlacza */
-    if((HAL_GetTick() - RefreshTick) >= RefreshRate_ms)
-    {
-      RefreshTick = HAL_GetTick();
-      IV6_RefreshStep(&Display);
-    }
-
-    /*  Aktualizacja wartości demo */
-    if ((HAL_GetTick() - DemoTick) >= 500u)
-    {
-      DemoTick = HAL_GetTick();
-      DemoValue = (uint16_t)((DemoValue + 1u) % 10000u);
-      IV6_SetDemoNumber(DemoValue);
-      IV6_SetDot(&Display, 1u, false);
-    }
+    HC595_WriteWord(&ShiftReg595, BuildSingleDigitFrame());
+    HAL_Delay(200);
   }
   /* USER CODE END 3 */
 }

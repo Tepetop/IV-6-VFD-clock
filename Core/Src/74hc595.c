@@ -23,14 +23,29 @@ static inline void HC595_WritePin(GPIO_TypeDef *port, uint16_t pin, bool high)
 }
 
 /**
- * @brief Generates a high-to-low pulse on the selected pin.
+ * @brief Short timing guard between GPIO edges.
+ */
+static inline void HC595_EdgeDelay(void)
+{
+    __NOP();
+    __NOP();
+    __NOP();
+    __NOP();
+}
+
+/**
+ * @brief Generates a low-high-low pulse on the selected pin.
  * @param h595 Pointer to initialized driver context.
  * @param pin GPIO pin mask to pulse.
  */
 static inline void HC595_PulsePin(HC595_t *h595, uint16_t pin)
 {
-    HC595_WritePin(h595->Port, pin, true);
     HC595_WritePin(h595->Port, pin, false);
+    HC595_EdgeDelay();
+    HC595_WritePin(h595->Port, pin, true);
+    HC595_EdgeDelay();
+    HC595_WritePin(h595->Port, pin, false);
+    HC595_EdgeDelay();
 }
 
 /**
@@ -82,9 +97,9 @@ void HC595_Init(
     h595->PinOE = oe_pin;
     h595->PinMask = (uint16_t)(ser_pin | srclk_pin | srclr_pin | rclk_pin | oe_pin);
 
-    /* Safe start: outputs disabled (OE=1), shift clear released (SRCLR=1). */
+    /* Safe start: clocks low, shift clear released (SRCLR=1), outputs enabled (OE=0). */
     h595->Port->BSRR = ((uint32_t)h595->PinMask << 16u);
-    HC595_WritePin(h595->Port, h595->PinOE, true);
+    HC595_WritePin(h595->Port, h595->PinOE, false);
     HC595_WritePin(h595->Port, h595->PinSRCLR, true);
 }
 
@@ -158,9 +173,7 @@ void HC595_WriteWord(HC595_t *h595, uint16_t data)
         return;
     }
 
-    HC595_SetOutputEnable(h595, false);
     HC595_ShiftByteUnchecked(h595, (uint8_t)(data >> 8u));
     HC595_ShiftByteUnchecked(h595, (uint8_t)data);
     HC595_Latch(h595);
-    HC595_SetOutputEnable(h595, true);
 }
