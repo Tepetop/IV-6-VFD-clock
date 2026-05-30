@@ -47,6 +47,8 @@ static HC595_t ShiftReg595;
 static IV6_t Display;
 static uint16_t DemoValue = 0u;
 static uint32_t DemoTick = 0u;
+static uint32_t RefreshTick = 0u;
+uint16_t RefreshRate_ms = 5u; 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -106,6 +108,7 @@ int main(void)
   IV6_SetDemoNumber(DemoValue);
   IV6_SetDot(&Display, 1u, true);
   DemoTick = HAL_GetTick();
+  RefreshTick = HAL_GetTick();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -116,17 +119,21 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    IV6_RefreshStep(&Display);
+    /*  Odświeżanie wyświetlacza */
+    if((HAL_GetTick() - RefreshTick) >= RefreshRate_ms)
+    {
+      RefreshTick = HAL_GetTick();
+      IV6_RefreshStep(&Display);
+    }
 
+    /*  Aktualizacja wartości demo */
     if ((HAL_GetTick() - DemoTick) >= 500u)
     {
       DemoTick = HAL_GetTick();
       DemoValue = (uint16_t)((DemoValue + 1u) % 10000u);
       IV6_SetDemoNumber(DemoValue);
-      IV6_SetDot(&Display, 1u, ((DemoValue & 0x01u) == 0u));
+      IV6_SetDot(&Display, 1u, false);
     }
-
-    HAL_Delay(1);
   }
   /* USER CODE END 3 */
 }
