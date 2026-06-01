@@ -201,7 +201,7 @@ void HC595_WriteDisplayFrame(HC595_t *h595, uint8_t segments, uint8_t grids)
 
     /* Exact layout required by hardware chain: 8 segment bits, 4 grid bits, 4 unused bits. */
     HC595_ShiftByteUnchecked(h595, segments);
-    HC595_ShiftNibbleBitOrderUnchecked(h595, (uint8_t)(grids & HC595_GRID_MASK_4BIT));
     HC595_ShiftNibbleBitOrderUnchecked(h595, HC595_UNUSED_NIBBLE);
+    HC595_ShiftNibbleBitOrderUnchecked(h595, (uint8_t)(grids & HC595_GRID_MASK_4BIT));
     HC595_Latch(h595);
 }

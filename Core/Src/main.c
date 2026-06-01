@@ -114,7 +114,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HC595_Init(&ShiftReg595, SER_GPIO_Port, SER_Pin, SRCLK_Pin, SRCLEAR_Pin, RCLK_Pin, OE_Pin);
   HC595_SetShiftClear(&ShiftReg595, false);
-  HC595_WriteDisplayFrame(&ShiftReg595, TEST_SEGMENTS_OFF, TEST_GRIDS_OFF);
+  //HC595_WriteDisplayFrame(&ShiftReg595, TEST_SEGMENTS_OFF, TEST_GRIDS_OFF);
   /* USER CODE END 2 */
 
   /* Infinite loop */
