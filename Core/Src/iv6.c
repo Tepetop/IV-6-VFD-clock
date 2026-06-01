@@ -113,17 +113,6 @@ static uint8_t IV6_GridMask(uint8_t index)
 }
 
 /**
- * @brief Combines segment and grid bytes into one 16-bit frame.
- * @param segments Segment byte.
- * @param grids Grid byte.
- * @return 16-bit frame, high byte grids and low byte segments.
- */
-static uint16_t IV6_BuildFrame(uint8_t segments, uint8_t grids)
-{
-	return (uint16_t)(((uint16_t)grids << 8u) | (uint16_t)segments);
-}
-
-/**
  * @copydoc IV6_Init
  */
 void IV6_Init(IV6_t *display, HC595_t *shift)
@@ -137,7 +126,7 @@ void IV6_Init(IV6_t *display, HC595_t *shift)
 	IV6_FillDigits(display, IV6_SEGMENTS_OFF);
 
 	HC595_SetShiftClear(shift, false);
-	HC595_WriteWord(shift, IV6_BuildFrame(IV6_SEGMENTS_OFF, IV6_GRIDS_OFF));
+	HC595_WriteDisplayFrame(shift, IV6_SEGMENTS_OFF, IV6_GRIDS_OFF);
 }
 
 /**
@@ -193,7 +182,7 @@ void IV6_Blank(IV6_t *display)
 
 	IV6_FillDigits(display, IV6_SEGMENTS_OFF);
 	display->ScanIndex = 0u;
-	HC595_WriteWord(display->Shift, IV6_BuildFrame(IV6_SEGMENTS_OFF, IV6_GRIDS_OFF));
+	HC595_WriteDisplayFrame(display->Shift, IV6_SEGMENTS_OFF, IV6_GRIDS_OFF);
 }
 
 /**
@@ -211,8 +200,7 @@ void IV6_RefreshStep(IV6_t *display)
 		index = 0u;
 	}
 
-	uint16_t frame = IV6_BuildFrame(display->DigitSegments[index], IV6_GridMask(index));
-	HC595_WriteWord(display->Shift, frame);
+	HC595_WriteDisplayFrame(display->Shift, display->DigitSegments[index], IV6_GridMask(index));
 
 	display->ScanIndex = IV6_NextScanIndex(index);
 }

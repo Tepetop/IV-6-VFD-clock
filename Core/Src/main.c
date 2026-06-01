@@ -32,8 +32,12 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define TEST_SEGMENT_DIGIT 0xC8u /* Active-low segments pattern for digit 2. */
-#define TEST_GRID_MASK     0xFEu /* Active-low: enable only first grid (Q0). */
+#define TEST_DIGITS_COUNT   10u
+#define TEST_LAMPS_COUNT    4u
+#define TEST_SEGMENTS_OFF   0xFFu
+#define TEST_GRIDS_OFF      0xFFu
+#define TEST_STEP_DELAY_MS  100u
+#define TEST_BLANK_DELAY_MS 50u
 
 /* USER CODE END PD */
 
@@ -56,10 +60,25 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static uint16_t BuildSingleDigitFrame(void)
-{
-  return (uint16_t)(((uint16_t)TEST_GRID_MASK << 8u) | TEST_SEGMENT_DIGIT);
-}
+static const uint8_t kDigitSegments[TEST_DIGITS_COUNT] = {
+  0x84u, /* 0 */
+  0xBEu, /* 1 */
+  0xC8u, /* 2 */
+  0x98u, /* 3 */
+  0xB2u, /* 4 */
+  0x91u, /* 5 */
+  0x81u, /* 6 */
+  0xBCu, /* 7 */
+  0x80u, /* 8 */
+  0xB0u  /* 9 */
+};
+
+static const uint8_t kGridMasks[TEST_LAMPS_COUNT] = {
+  0xFEu, /* Lamp 0 active-low */
+  0xFDu, /* Lamp 1 active-low */
+  0xFBu, /* Lamp 2 active-low */
+  0xF7u  /* Lamp 3 active-low */
+};
 
 /* USER CODE END 0 */
 
@@ -95,7 +114,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HC595_Init(&ShiftReg595, SER_GPIO_Port, SER_Pin, SRCLK_Pin, SRCLEAR_Pin, RCLK_Pin, OE_Pin);
   HC595_SetShiftClear(&ShiftReg595, false);
-  HC595_WriteWord(&ShiftReg595, 0b1111111111111111u); /* Test pattern: all segments and grids off. */
+  HC595_WriteDisplayFrame(&ShiftReg595, TEST_SEGMENTS_OFF, TEST_GRIDS_OFF);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -105,8 +124,15 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HC595_WriteWord(&ShiftReg595, BuildSingleDigitFrame());
-    HAL_Delay(200);
+    for (uint8_t lamp = 0u; lamp < TEST_LAMPS_COUNT; lamp++) {
+      for (uint8_t digit = 0u; digit < TEST_DIGITS_COUNT; digit++) {
+        HC595_WriteDisplayFrame(&ShiftReg595, kDigitSegments[digit], kGridMasks[lamp]);
+        HAL_Delay(TEST_STEP_DELAY_MS);
+      }
+
+      HC595_WriteDisplayFrame(&ShiftReg595, TEST_SEGMENTS_OFF, TEST_GRIDS_OFF);
+      HAL_Delay(TEST_BLANK_DELAY_MS);
+    }
   }
   /* USER CODE END 3 */
 }

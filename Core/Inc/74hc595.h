@@ -7,8 +7,11 @@
  */
 
 #include "stm32f1xx_hal.h"
-//#include <stdbool.h>
+#include <stdbool.h>
 #include <stdint.h>
+
+#define HC595_GRID_MASK_4BIT 0x0Fu
+#define HC595_UNUSED_NIBBLE  0x0Fu
 
 /**
  * @brief Runtime context for a single 74HC595 device.
@@ -83,5 +86,18 @@ void HC595_Latch(HC595_t *h595);
  * @param data 16-bit value to write.
  */
 void HC595_WriteWord(HC595_t *h595, uint16_t data);
+
+/**
+ * @brief Writes one display frame in fixed serial order.
+ * @param h595 Pointer to initialized driver context.
+ * @param segments Segment byte (bit 7 is the dot segment).
+ * @param grids Active-low grid mask; only low nibble is used (bit0..bit3 for lamp0..lamp3).
+ *
+ * Sent bit order:
+ * 1) 8 segment bits (MSB first)
+ * 2) 4 grid bits (bit0 to bit3)
+ * 3) 4 unused bits set high
+ */
+void HC595_WriteDisplayFrame(HC595_t *h595, uint8_t segments, uint8_t grids);
 
 #endif // HC595_H
