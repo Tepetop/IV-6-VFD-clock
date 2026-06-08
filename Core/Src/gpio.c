@@ -51,10 +51,8 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, SER_Pin|SRCLK_Pin|RCLK_Pin|USER_LED_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, SRCLEAR__Pin|OE__Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, SER_Pin|SRCLK_Pin|OE_Pin|USER_LED_Pin
+                          |RCLK_Pin|SRCLEAR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, CLK_PIN_Pin|DATA_A_Pin, GPIO_PIN_RESET);
@@ -65,10 +63,10 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USER_BUTTON_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SER_Pin SRCLK_Pin SRCLEAR__Pin RCLK_Pin OE__Pin
-                           USER_LED_Pin */
-  GPIO_InitStruct.Pin = SER_Pin|SRCLK_Pin|SRCLEAR__Pin|RCLK_Pin|OE__Pin
-                          |USER_LED_Pin;
+  /*Configure GPIO pins : SER_Pin SRCLK_Pin OE_Pin USER_LED_Pin
+                           RCLK_Pin SRCLEAR_Pin */
+  GPIO_InitStruct.Pin = SER_Pin|SRCLK_Pin|OE_Pin|USER_LED_Pin
+                          |RCLK_Pin|SRCLEAR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

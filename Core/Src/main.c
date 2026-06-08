@@ -22,7 +22,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "74hc595.h"
 #include "iv6.h"
+#include "ds3231.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,6 +34,12 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define DISPLAY_REFRESH_PERIOD_MS 2u
+#define RTC_ALARM2_PERIOD_MS      2000u
+
+#define RTC_SIM_START_HOUR        12u
+#define RTC_SIM_START_MINUTE      00u
+#define RTC_SIM_START_SECOND      0u
 
 /* USER CODE END PD */
 
@@ -44,31 +52,172 @@
 
 /* USER CODE BEGIN PV */
 static HC595_t ShiftReg595;
-static IV6_t Display;
-static uint16_t DemoValue = 0u;
-static uint32_t DemoTick = 0u;
-static uint32_t RefreshTick = 0u;
-uint16_t RefreshRate_ms = 5; 
+static IV6_t VfdDisplay;
+
+static DS3231_t RtcSim;
+static DS3231_DateTime RtcNow;
+static DS3231_Alarm2 RtcAlarm2;
+
+static uint32_t LastDisplayRefreshTick = 0u;
+static uint32_t LastAlarm2Tick = 0u;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+static bool App_IsLeapYear(uint16_t year_full);
+static uint8_t App_DaysInMonth(uint8_t month, uint16_t year_full);
+static void App_IncrementOneMinute(DS3231_DateTime *dt);
+static void App_UpdateDisplayFromTime(IV6_t *display, const DS3231_DateTime *dt);
+static void App_RtcSimulationInit(DS3231_t *hrtc, DS3231_DateTime *dt, DS3231_Alarm2 *alarm2);
+static void App_RtcSimulationTask(DS3231_t *hrtc, DS3231_DateTime *dt, const DS3231_Alarm2 *alarm2);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static void IV6_SetDemoNumber(uint16_t value)
+static bool App_IsLeapYear(uint16_t year_full)
 {
-  uint8_t digits[IV6_DIGITS_COUNT];
+  if ((year_full % 4u) != 0u) {
+    return false;
+  }
 
-  digits[0] = (uint8_t)((value / 1000u) % 10u);
-  digits[1] = (uint8_t)((value / 100u) % 10u);
-  digits[2] = (uint8_t)((value / 10u) % 10u);
-  digits[3] = (uint8_t)(value % 10u);
+  if ((year_full % 100u) != 0u) {
+    return true;
+  }
 
-  IV6_SetDigits(&Display, digits);
+  return (year_full % 400u) == 0u;
+}
+
+static uint8_t App_DaysInMonth(uint8_t month, uint16_t year_full)
+{
+  static const uint8_t days_lut[12] = { 31u, 28u, 31u, 30u, 31u, 30u, 31u, 31u, 30u, 31u, 30u, 31u };
+
+  if (month < 1u || month > 12u) {
+    return 31u;
+  }
+
+  if (month == 2u && App_IsLeapYear(year_full)) {
+    return 29u;
+  }
+
+  return days_lut[month - 1u];
+}
+
+static void App_IncrementOneMinute(DS3231_DateTime *dt)
+{
+  if (dt == NULL) {
+    return;
+  }
+
+  dt->seconds = 0u;
+  dt->minutes++;
+  if (dt->minutes < 60u) {
+    return;
+  }
+
+  dt->minutes = 0u;
+  dt->hours++;
+  if (dt->hours < 24u) {
+    return;
+  }
+
+  dt->hours = 0u;
+  if (dt->day >= 1u && dt->day <= 7u) {
+    dt->day = (uint8_t)((dt->day % 7u) + 1u);
+  } else {
+    dt->day = 1u;
+  }
+
+  uint16_t year_full = (uint16_t)(2000u + dt->year);
+  uint8_t days_in_month = App_DaysInMonth(dt->month, year_full);
+
+  dt->date++;
+  if (dt->date <= days_in_month) {
+    return;
+  }
+
+  dt->date = 1u;
+  dt->month++;
+  if (dt->month <= 12u) {
+    return;
+  }
+
+  dt->month = 1u;
+  year_full++;
+  dt->year = (uint8_t)(year_full % 100u);
+  dt->century = (year_full >= 2100u);
+}
+
+static void App_UpdateDisplayFromTime(IV6_t *display, const DS3231_DateTime *dt)
+{
+  if (display == NULL || dt == NULL) {
+    return;
+  }
+
+  uint8_t digits[IV6_DIGITS_COUNT] = {
+    (uint8_t)(dt->minutes % 10u),
+    (uint8_t)(dt->minutes / 10u),
+    (uint8_t)(dt->hours % 10u),
+    (uint8_t)(dt->hours / 10u)
+  };
+
+  IV6_SetDigits(display, digits);
+  IV6_SetDot(display, 2, true);
+}
+
+static void App_RtcSimulationInit(DS3231_t *hrtc, DS3231_DateTime *dt, DS3231_Alarm2 *alarm2)
+{
+  if (hrtc == NULL || dt == NULL || alarm2 == NULL) {
+    return;
+  }
+
+  hrtc->hi2c = NULL;
+  hrtc->i2c_addr = (uint16_t)(DS3231_I2C_ADDR << 1);
+  hrtc->sqw_port = NULL;
+  hrtc->sqw_pin = 0u;
+  hrtc->hour_format = DS3231_FORMAT_24H;
+  hrtc->initialized = true;
+  hrtc->DS3231_IRQ_Alarm = DS3231_IRQ_NONE;
+  hrtc->DS3231_IRQ_Flag = 0u;
+  hrtc->oscilator_stopped = 0u;
+
+  dt->seconds = RTC_SIM_START_SECOND;
+  dt->minutes = RTC_SIM_START_MINUTE;
+  dt->hours = RTC_SIM_START_HOUR;
+  dt->ampm = DS3231_AM;
+  dt->format = DS3231_FORMAT_24H;
+  dt->day = 1u;
+  dt->date = 1u;
+  dt->month = 1u;
+  dt->year = 26u;
+  dt->century = false;
+
+  alarm2->minutes = 0u;
+  alarm2->hours = 0u;
+  alarm2->ampm = DS3231_AM;
+  alarm2->format = DS3231_FORMAT_24H;
+  alarm2->day_date = 1u;
+  alarm2->mode = DS3231_ALM2_EVERY_MINUTE;
+}
+
+static void App_RtcSimulationTask(DS3231_t *hrtc, DS3231_DateTime *dt, const DS3231_Alarm2 *alarm2)
+{
+  if (hrtc == NULL || dt == NULL || alarm2 == NULL) {
+    return;
+  }
+
+  if (!hrtc->initialized || alarm2->mode != DS3231_ALM2_EVERY_MINUTE) {
+    return;
+  }
+
+  uint32_t now = HAL_GetTick();
+  while ((uint32_t)(now - LastAlarm2Tick) >= RTC_ALARM2_PERIOD_MS) {
+    LastAlarm2Tick += RTC_ALARM2_PERIOD_MS;
+    App_IncrementOneMinute(dt);
+    hrtc->DS3231_IRQ_Alarm = DS3231_IRQ_ALARM2;
+    hrtc->DS3231_IRQ_Flag = 1u;
+  }
 }
 
 /* USER CODE END 0 */
@@ -103,12 +252,17 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-  HC595_Init(&ShiftReg595, SER_GPIO_Port, SER_Pin, SRCLK_Pin, SRCLEAR__Pin, RCLK_Pin, OE__Pin);
-  IV6_Init(&Display, &ShiftReg595);
-  //IV6_SetDemoNumber(DemoValue);
-  //IV6_SetDot(&Display, 1u, false);
-  DemoTick = HAL_GetTick();
-  RefreshTick = HAL_GetTick();
+  HC595_Init(&ShiftReg595, SER_GPIO_Port, SER_Pin, SRCLK_Pin, SRCLEAR_Pin, RCLK_Pin, OE_Pin);
+  HC595_SetOutputEnable(&ShiftReg595, true);
+  HC595_SetShiftClear(&ShiftReg595, false);
+
+  IV6_Init(&VfdDisplay, &ShiftReg595);
+
+  App_RtcSimulationInit(&RtcSim, &RtcNow, &RtcAlarm2);
+  LastDisplayRefreshTick = HAL_GetTick();
+  LastAlarm2Tick = HAL_GetTick();
+
+  App_UpdateDisplayFromTime(&VfdDisplay, &RtcNow);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -118,21 +272,22 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    uint32_t now = HAL_GetTick();
 
-    /*  Odświeżanie wyświetlacza */
-    if((HAL_GetTick() - RefreshTick) >= RefreshRate_ms)
-    {
-      RefreshTick = HAL_GetTick();
-      IV6_RefreshStep(&Display);
+    if ((uint32_t)(now - LastDisplayRefreshTick) >= DISPLAY_REFRESH_PERIOD_MS) {
+      LastDisplayRefreshTick = now;
+      IV6_RefreshStep(&VfdDisplay);
     }
 
-    /*  Aktualizacja wartości demo */
-    if ((HAL_GetTick() - DemoTick) >= 500u)
-    {
-      DemoTick = HAL_GetTick();
-      DemoValue = (uint16_t)((DemoValue + 1u) % 10000u);
-      IV6_SetDemoNumber(DemoValue);
-      IV6_SetDot(&Display, 1u, false);
+    App_RtcSimulationTask(&RtcSim, &RtcNow, &RtcAlarm2);
+
+    if (RtcSim.DS3231_IRQ_Flag != 0u) {
+      if ((RtcSim.DS3231_IRQ_Alarm & DS3231_IRQ_ALARM2) != 0u) {
+        App_UpdateDisplayFromTime(&VfdDisplay, &RtcNow);
+      }
+
+      RtcSim.DS3231_IRQ_Alarm = DS3231_IRQ_NONE;
+      RtcSim.DS3231_IRQ_Flag = 0u;
     }
   }
   /* USER CODE END 3 */
