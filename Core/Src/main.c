@@ -36,7 +36,7 @@
 #define TEST_LAMPS_COUNT    4u
 #define TEST_SEGMENTS_OFF   0xFFu
 #define TEST_GRIDS_OFF      0xFFu
-#define TEST_STEP_DELAY_MS  100u
+#define TEST_STEP_DELAY_MS  200u
 #define TEST_BLANK_DELAY_MS 50u
 
 /* USER CODE END PD */
@@ -60,6 +60,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#if 1
 static const uint8_t kDigitSegments[TEST_DIGITS_COUNT] = {
   0x84u, /* 0 */
   0xBEu, /* 1 */
@@ -72,6 +73,20 @@ static const uint8_t kDigitSegments[TEST_DIGITS_COUNT] = {
   0x80u, /* 8 */
   0xB0u  /* 9 */
 };
+#else
+static const uint8_t kDigitSegments[TEST_DIGITS_COUNT] = {
+  0x7Bu, /* 0 */
+  0x24u, /* 1 */
+  0x5Du, /* 2 */
+  0x6Du, /* 3 */
+  0x2Eu, /* 4 */
+  0x6Bu, /* 5 */
+  0x7Bu, /* 6 */
+  0x25u, /* 7 */
+  0x7Fu, /* 8 */
+  0x6Fu  /* 9 */
+};
+#endif
 
 static const uint8_t kGridMasks[TEST_LAMPS_COUNT] = {
   0xFEu, /* Lamp 0 active-low */
