@@ -15,6 +15,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "stm32f1xx_hal.h"
+
+/*
+ * Allow using DS3231 types in simulation builds where HAL I2C module
+ * is not enabled yet. The driver source still requires full I2C support.
+ */
+#ifndef HAL_I2C_MODULE_ENABLED
+typedef struct __I2C_HandleTypeDef I2C_HandleTypeDef;
+#endif
 /* =========================================================================
  * Adres I2C
  * ========================================================================= */
